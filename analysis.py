@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 athlete_df=pd.read_csv("data/athlete_events.csv",index_col="ID")
 noc_df=pd.read_csv("data/noc_regions.csv",index_col="NOC")
 
+# NOTE - age data is in years (not months) so fairly inaccurate. Cannot differentiate between people born 23 months apart and those 2 months apart
+
 """
 CLEAN DATA
 """
@@ -64,11 +66,91 @@ OVERVIEW ANALYSIS
 """
 
 print("'athlete_df' contains {} rows covering:".format(athlete_df.shape[0]))
-print("\t{} summer games ({}-{}) & {} winter games ({}-{}).".format(len(athlete_df[athlete_df["Season"]=="summer"]["Year"].unique()),athlete_df[athlete_df["Season"]=="summer"]["Year"].min(),athlete_df[athlete_df["Season"]=="summer"]["Year"].max(),len(athlete_df[athlete_df["Season"]=="winter"]["Year"].unique()),athlete_df[athlete_df["Season"]=="winter"]["Year"].min(),athlete_df[athlete_df["Season"]=="winter"]["Year"].max()))
+summer_games=athlete_df[athlete_df["Season"]=="summer"]
+winter_games=athlete_df[athlete_df["Season"]=="winter"]
+print("\t{} summer games ({}-{}) & {} winter games ({}-{}).".format(len(summer_games["Year"].unique()),summer_games["Year"].min(),summer_games["Year"].max(),len(winter_games["Year"].unique()),winter_games["Year"].min(),winter_games["Year"].max()))
 print("\t{} sports ({} summer, {} winter).".format(len(athlete_df["Sport"].unique()),len(athlete_df[athlete_df["Season"]=="summer"]["Sport"].unique()),len(athlete_df[athlete_df["Season"]=="winter"]["Sport"].unique())))
+
 both_games_sports=list(set(athlete_df[athlete_df["Season"]=="summer"]["Sport"].unique()) & set(athlete_df[athlete_df["Season"]=="winter"]["Sport"].unique()))
 print("\t{} sport{} have appeared in both winter & summer games ({})".format(len(both_games_sports),"" if len(both_games_sports)==1 else "s",",".join(both_games_sports)))
-print("\t{} events ({} summer, {} winter).".format(len(athlete_df["Event"].unique()),len(athlete_df[athlete_df["Season"]=="summer"]["Event"].unique()),len(athlete_df[athlete_df["Season"]=="winter"]["Event"].unique())))
+print("\t{} events ({} summer, {} winter).\n".format(len(athlete_df["Event"].unique()),len(athlete_df[athlete_df["Season"]=="summer"]["Event"].unique()),len(athlete_df[athlete_df["Season"]=="winter"]["Event"].unique())))
+
+"""
+PROBLEM ANALYSIS
+"""
+
+"""Overall Age distribution of medal winners against non-winners"""
+# kde plot of age distribution for medal winners against non-winners
+# suggests medal winners are slightly older
+xlims=(athlete_df["Age"].min(),athlete_df["Age"].max())
+athlete_df[athlete_df["Medal"].notnull()]["Age"].plot.kde(xlim=xlims,label="Medal Winners",color="gold")
+athlete_df[athlete_df["Medal"].isnull()]["Age"].plot.kde(xlim=xlims,label="No Medal",color="black")
+plt.legend()
+plt.show()
+
+"""Consider age wrt point in olympic cycle (ie mod 4)"""
+athlete_df["Cycle_Age"]=(athlete_df["Age"]%4).astype(int)
+
+all_cycle_ages_counts=athlete_df["Cycle_Age"].value_counts(normalize=True)
+non_medalist_cycle_ages_counts=athlete_df[athlete_df["Medal"].isnull()]["Cycle_Age"].value_counts(normalize=True).sort_index()
+medalist_cycle_ages_counts=athlete_df[athlete_df["Medal"].notnull()]["Cycle_Age"].value_counts(normalize=True).sort_index()
+
+# Props of medalists & competitors born in each year of olympiad
+# print("Medal Winners")
+# print(non_medalist_cycle_ages_counts)
+# print("Not Winners")
+# print(medalist_cycle_ages_counts)
+# There is a discrepenacy (is it statistical signifcant)
+
+y_lims=(0,1.1*max(all_cycle_ages_counts.max(),non_medalist_cycle_ages_counts.max(),medalist_cycle_ages_counts.max()))
+all_cycle_ages_counts.plot(color="black",label="All",ylim=y_lims)
+non_medalist_cycle_ages_counts.plot(color="gray",label="Not Winners",ylim=y_lims)
+medalist_cycle_ages_counts.plot(color="gold",label="Medal Winners",ylim=y_lims)
+plt.legend()
+plt.show()
+
+from scipy.stats import binom
+
+"""Test probability of being born in olympiad"""
+# MEDALISTS
+print("HYPOTHEIS TEST for probability of binomial RV modelling whether a *medal winner* was born in an olympic year.")
+n=athlete_df[athlete_df["Medal"].notnull()].shape[0] # medal winner
+obs=athlete_df[(athlete_df["Medal"].notnull()) & (athlete_df["Cycle_Age"]==0)].shape[0] # medal winner and born in olympiad
+print("Num medal winners: {:,}. Num medal winners born in olympiad: {:,} (p={:.4f}).".format(n,obs,obs/n))
+
+expected_p=1/4
+p_value=1-binom.cdf(obs,n,expected_p) # H0:p=1/4, H1:p!=1/4
+print("p_value={:.8f}. {}Statistically Ssignificant\n".format(p_value,"" if p_value<=.1 else "*Not* "))
+
+# COMPETITORS
+print("HYPOTHEIS TEST for probability of binomial RV modelling whether a *competitor* was born in an olympic year.")
+n=athlete_df.shape[0] # competitor
+obs=(athlete_df["Cycle_Age"]==0).sum() # competitor and born in olympiad
+print("Num competitors: {:,}. Num competitors born in olympiad: {:,} (p={:.4f}).".format(n,obs,obs/n))
+
+expected_p=1/4
+p_value=1-binom.cdf(obs,n,expected_p) # H0:p=1/4, H1:p!=1/4
+print("p_value={:.8f}. {}Statistically Significant\n".format(p_value,"" if p_value<=.1 else "*Not* "))
+
+"""Test overall distribution"""
+# MEDALISTS
+from scipy.stats import chisquare
+
+print("CHI^2 TEST for whether distribution of *medalists* ages in olympic cycle is uniform.")
+f_obs=athlete_df[athlete_df["Medal"].notnull()]["Cycle_Age"].value_counts().sort_index().values
+f_exp=np.repeat(sum(f_obs)/4,4)
+print("Observed occs: {}. Expected occs: {}".format(f_obs,f_exp))
+_,p_value=chisquare(f_obs,f_exp)
+print("p_value={:.8f}. {}Statistically Significant\n".format(p_value,"" if p_value<=.1 else "*Not* "))
+
+
+# all competitors
+print("CHI^2 TEST for whether distribution of *competitors* ages in olympic cycle is uniform.")
+f_obs=athlete_df["Cycle_Age"].value_counts().sort_index().values
+f_exp=np.repeat(sum(f_obs)/4,4)
+print("Observed occs: {}. Expected occs: {}".format(f_obs,f_exp))
+_,p_value=chisquare(f_obs,f_exp)
+print("p_value={:.8f}. {}Statistically Significant\n".format(p_value,"" if p_value<=.1 else "*Not* "))
 
 # TODO
 # consider each sport independetly
