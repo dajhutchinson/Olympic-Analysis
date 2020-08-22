@@ -49,14 +49,14 @@ def games_per_sport(df):
     return sport_years_df
 
 # remove mass team sports & non-physical sports
-non_physical=["art competitions","equestrianism","polo"]
-team_sports=["baseball","tug-of-war","handball","basketball","ice hockey","hockey","football"]
-reduced_sports=athlete_df.drop(non_physical,axis=0).drop(team_sports,axis=0)
+non_physical=["art competitions","equestrianism","polo","sailing"]
+team_sports=["baseball","tug-of-war","handball","basketball","ice hockey","hockey","football","water polo"]
+athlete_df=athlete_df[~athlete_df["Sport"].isin(non_physical)]
+athlete_df=athlete_df[~athlete_df["Sport"].isin(team_sports)]
 
 # remove sports which appeared in less than 5 games
-games_per_sport_df=games_per_sport(reduced_sports)
+games_per_sport_df=games_per_sport(athlete_df)
 common_sports=games_per_sport_df[games_per_sport_df["Num_Years"]>=10]
-
 print("{} rows removed due to sport.".format((~athlete_df["Sport"].isin(common_sports.index)).sum()))
 athlete_df=athlete_df[athlete_df["Sport"].isin(common_sports.index)]
 
@@ -83,8 +83,8 @@ PROBLEM ANALYSIS
 """
 
 """Overall Age distribution of medal winners against non-winners"""
-kde plot of age distribution for medal winners against non-winners
-suggests medal winners are slightly older
+# kde plot of age distribution for medal winners against non-winners
+# suggests medal winners are slightly older
 xlims=(athlete_df["Age"].min(),athlete_df["Age"].max())
 athlete_df[athlete_df["Medalist"]]["Age"].plot.kde(xlim=xlims,label="Medalists",color="gold")
 athlete_df["Age"].plot.kde(xlim=xlims,label="Competitors",color="black")
@@ -168,6 +168,56 @@ plt.legend()
 plt.show()
 # Male distributions are almost identical, the womans' are not. Suggests that older female competitors are more likely to win.
 # This may be due to the sports that women compete in compared to men (female gymansts are notably younger than male)
+
+"""
+AGE SPLIT BY SPORT
+"""
+# sort sports by mean age increasing
+mean_age_per_sport=athlete_df.groupby(by=["Sport"])["Age"].mean().sort_values()
+num_sports=mean_age_per_sport.shape[0]
+
+# plot of age distribution for each sports
+fig,axes=plt.subplots(ncols=3,nrows=int(np.ceil(num_sports/3)))
+
+# ensure plots are all same scale
+xlims=(athlete_df["Age"].min(),athlete_df["Age"].max())
+ylims=(0,.15)
+
+for count,sport in enumerate(list(mean_age_per_sport.index)):
+    row_i=count//3; col_i=count%3
+    ax=axes[row_i,col_i]
+    data=athlete_df[athlete_df["Sport"]==sport]
+
+    # plot data
+    data[data["Medalist"]]["Age"].plot.kde(ax=ax,xlim=xlims,ylim=ylims,label="Medalists",color="gold")
+    data["Age"].plot.kde(ax=ax,xlim=xlims,ylim=ylims,label="Competitors",color="black")
+
+    # add horizontal line for mean of each
+    ax.axvline(x=data[data["Medalist"]]["Age"].mean(),color="gold",ls="--")
+    ax.axvline(x=data["Age"].mean(),color="black",ls="--")
+
+    # style plot
+    ax.set_title(str.capitalize(sport))
+    ax.set_yticks([0,.05,.1,.15])
+    if (col_i==0): ax.set_ylabel("Density") # LHS
+    else: ax.set_ylabel(""); ax.set_yticklabels([])
+    if (count+3>=num_sports): ax.set_xlabel("Age (Years)") # bottom of each column
+    else: ax.set_xlabel(""); ax.set_xticklabels([])
+
+# remove excess plots
+for i in range(num_sports,3*int(np.ceil(num_sports/3))):
+    row_i=i//3; col_i=i%3
+    fig.delaxes(axes[row_i,col_i])
+
+# legend data
+from matplotlib.lines import Line2D
+colors=['black',"black",'gold',"gold"]
+style =["-","--","-","--"]
+lines =[Line2D([0],[0],linewidth=3,linestyle=style[i],color=colors[i]) for i in range(4)]
+labels=["Competitors","Mean","Medalists","Mean"]
+fig.legend(lines,labels,title="Legend",loc="top right")
+
+plt.show()
 
 """
 NORMALISED AGE SPLIT BY SPORT
