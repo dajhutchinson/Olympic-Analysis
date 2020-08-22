@@ -47,19 +47,22 @@ def games_per_sport(df):
     sport_years_df=pd.pivot_table(data=athlete_df,values="Year",index="Sport",aggfunc=[lambda x:len(x.unique()),lambda x:list(x.unique())])
     sport_years_df.columns=["Num_Years","Years"]
     return sport_years_df
-games_per_sport_df=games_per_sport(athlete_df)
-games_per_sport_df=games_per_sport_df.sort_values("Num_Years")
-
-# remove sports which appeared in less than 5 games
-common_sports=games_per_sport_df[games_per_sport_df["Num_Years"]>=5]
 
 # remove mass team sports & non-physical sports
-non_physical=["art competitions"]
+non_physical=["art competitions","equestrianism","polo"]
 team_sports=["baseball","tug-of-war","handball","basketball","ice hockey","hockey","football"]
-common_sports=common_sports.drop(non_physical,axis=0).drop(team_sports,axis=0)
+reduced_sports=athlete_df.drop(non_physical,axis=0).drop(team_sports,axis=0)
+
+# remove sports which appeared in less than 5 games
+games_per_sport_df=games_per_sport(reduced_sports)
+common_sports=games_per_sport_df[games_per_sport_df["Num_Years"]>=10]
 
 print("{} rows removed due to sport.".format((~athlete_df["Sport"].isin(common_sports.index)).sum()))
 athlete_df=athlete_df[athlete_df["Sport"].isin(common_sports.index)]
+
+"""Add Fields"""
+athlete_df["Cycle_Age"]=(athlete_df["Age"]%4).astype(int)
+athlete_df["Medalist"]=athlete_df["Medal"].isin(["gold","silver","bronze"])
 
 """
 OVERVIEW ANALYSIS
@@ -80,20 +83,18 @@ PROBLEM ANALYSIS
 """
 
 """Overall Age distribution of medal winners against non-winners"""
-# kde plot of age distribution for medal winners against non-winners
-# suggests medal winners are slightly older
+kde plot of age distribution for medal winners against non-winners
+suggests medal winners are slightly older
 xlims=(athlete_df["Age"].min(),athlete_df["Age"].max())
-athlete_df[athlete_df["Medal"].notnull()]["Age"].plot.kde(xlim=xlims,label="Medalists",color="gold")
+athlete_df[athlete_df["Medalist"]]["Age"].plot.kde(xlim=xlims,label="Medalists",color="gold")
 athlete_df["Age"].plot.kde(xlim=xlims,label="Competitors",color="black")
 plt.legend()
 plt.show()
 
 """Consider age wrt point in olympic cycle (ie mod 4)"""
-athlete_df["Cycle_Age"]=(athlete_df["Age"]%4).astype(int)
-
 all_cycle_ages_counts=athlete_df["Cycle_Age"].value_counts(normalize=True)
-non_medalist_cycle_ages_counts=athlete_df[athlete_df["Medal"].isnull()]["Cycle_Age"].value_counts(normalize=True).sort_index()
-medalist_cycle_ages_counts=athlete_df[athlete_df["Medal"].notnull()]["Cycle_Age"].value_counts(normalize=True).sort_index()
+non_medalist_cycle_ages_counts=athlete_df[~athlete_df["Medalist"]]["Cycle_Age"].value_counts(normalize=True).sort_index()
+medalist_cycle_ages_counts=athlete_df[athlete_df["Medalist"]]["Cycle_Age"].value_counts(normalize=True).sort_index()
 
 # Props of medalists & competitors born in each year of olympiad
 # print("Medal Winners")
@@ -114,8 +115,8 @@ from scipy.stats import binom
 """Test probability of being born in olympiad"""
 # MEDALISTS
 print("HYPOTHEIS TEST for probability of binomial RV modelling whether a *medal winner* was born in an olympic year.")
-n=athlete_df[athlete_df["Medal"].notnull()].shape[0] # medal winner
-obs=athlete_df[(athlete_df["Medal"].notnull()) & (athlete_df["Cycle_Age"]==0)].shape[0] # medal winner and born in olympiad
+n=athlete_df[athlete_df["Medalist"]].shape[0] # medal winner
+obs=athlete_df[athlete_df["Medalist"] & (athlete_df["Cycle_Age"]==0)].shape[0] # medal winner and born in olympiad
 print("Num medal winners: {:,}. Num medal winners born in olympiad: {:,} (p={:.4f}).".format(n,obs,obs/n))
 
 expected_p=1/4
@@ -137,7 +138,7 @@ print("p_value={:.8f}. {}Statistically Significant\n".format(p_value,"" if p_val
 from scipy.stats import chisquare
 
 print("CHI^2 TEST for whether distribution of *medalists* ages in olympic cycle is uniform.")
-f_obs=athlete_df[athlete_df["Medal"].notnull()]["Cycle_Age"].value_counts().sort_index().values
+f_obs=athlete_df[athlete_df["Medalist"]]["Cycle_Age"].value_counts().sort_index().values
 f_exp=np.repeat(sum(f_obs)/4,4)
 print("Observed occs: {}. Expected occs: {}".format(f_obs,f_exp))
 _,p_value=chisquare(f_obs,f_exp)
@@ -159,16 +160,61 @@ female_athletes=athlete_df[athlete_df["Sex"]=="F"].copy()
 
 # Distribution of ages of medalists and competitors, split by gender
 xlims=(athlete_df["Age"].min(),athlete_df["Age"].max())
-male_athletes[male_athletes["Medal"].notnull()]["Age"].plot.kde(xlim=xlims,label="Male Medalists",color="blue")
+male_athletes[male_athletes["Medalist"]]["Age"].plot.kde(xlim=xlims,label="Male Medalists",color="blue")
 male_athletes["Age"].plot.kde(xlim=xlims,label="Male Competitors",color="black")
-female_athletes[female_athletes["Medal"].notnull()]["Age"].plot.kde(xlim=xlims,label="Female Medalists",color="pink")
+female_athletes[female_athletes["Medalist"]]["Age"].plot.kde(xlim=xlims,label="Female Medalists",color="pink")
 female_athletes["Age"].plot.kde(xlim=xlims,label="Female Competitors",color="gray")
 plt.legend()
 plt.show()
 # Male distributions are almost identical, the womans' are not. Suggests that older female competitors are more likely to win.
 # This may be due to the sports that women compete in compared to men (female gymansts are notably younger than male)
 
+"""
+NORMALISED AGE SPLIT BY SPORT
+"""
+
+sport_groups=athlete_df.groupby(by=["Sport"])
+mean_age_per_sport=sport_groups["Age"].mean().sort_values()
+
+# cycle age distribution per sport (Medalists)
+prop_func=lambda x,n:list(x).count(n)/len(x)
+competitors_sport_cycle_age_pt=pd.pivot_table(data=athlete_df,values="Cycle_Age",index="Sport",aggfunc=[lambda x:prop_func(x,0),lambda x:prop_func(x,1),lambda x:prop_func(x,2),lambda x:prop_func(x,3)])
+competitors_sport_cycle_age_pt.columns=["0","1","2","3"]
+competitors_cycle_age_mean=athlete_df["Cycle_Age"].value_counts(normalize=True).sort_index()
+
+# cycle age distribution per sport (Competitors)
+medalists_sport_cycle_age_pt=pd.pivot_table(data=athlete_df[athlete_df["Medalist"]],values="Cycle_Age",index="Sport",aggfunc=[lambda x:prop_func(x,0),lambda x:prop_func(x,1),lambda x:prop_func(x,2),lambda x:prop_func(x,3)])
+medalists_sport_cycle_age_pt.columns=["0","1","2","3"]
+medalists_cycle_age_mean=athlete_df[athlete_df["Medalist"]]["Cycle_Age"].value_counts(normalize=True).sort_index()
+
+# legend data
+from matplotlib.lines import Line2D
+colors=['gray','black','red']
+style =["-","-","--"]
+lines =[Line2D([0],[0],linewidth=3,linestyle=style[i],color=colors[i]) for i in range(3)]
+labels=["Individual Sport Proportions","Overall Proportion","Expected"]
+
+competitors_sport_cycle_age_pt.transpose().plot.line(color="gray",ylim=(.15,.35))
+plt.xlabel("Cycle Age")
+plt.ylabel("Proportion")
+plt.title("Cycle Age of Competitors by Sport")
+plt.plot(list(competitors_cycle_age_mean.index),competitors_cycle_age_mean.values,color="black") # plot mean values
+plt.plot([0,1,2,3], [.25,.25,.25,.25], '--',color="red")
+
+plt.legend(lines,labels)
+
+medalists_sport_cycle_age_pt.transpose().plot.line(color="gray",ylim=(.15,.35))
+plt.plot(list(medalists_cycle_age_mean.index),medalists_cycle_age_mean.values,color="black") # plot mean values
+plt.plot([0,1,2,3], [.25,.25,.25,.25], '--',color="red")
+plt.xlabel("Cycle Age")
+plt.ylabel("Proportion")
+plt.title("Cycle Age of Medalists by Sport")
+
+plt.legend(lines,labels)
+
+plt.show()
+
 # TODO
 # consider each sport independetly
-# split by gender
-# Remove sports which appear at few games (ie less than 10?)
+# Change in age over time
+# Change by country
