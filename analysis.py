@@ -82,11 +82,11 @@ PROBLEM ANALYSIS
 """Overall Age distribution of medal winners against non-winners"""
 # kde plot of age distribution for medal winners against non-winners
 # suggests medal winners are slightly older
-# xlims=(athlete_df["Age"].min(),athlete_df["Age"].max())
-# athlete_df[athlete_df["Medal"].notnull()]["Age"].plot.kde(xlim=xlims,label="Medalists",color="gold")
-# athlete_df["Age"].plot.kde(xlim=xlims,label="Competitors",color="black")
-# plt.legend()
-# plt.show()
+xlims=(athlete_df["Age"].min(),athlete_df["Age"].max())
+athlete_df[athlete_df["Medal"].notnull()]["Age"].plot.kde(xlim=xlims,label="Medalists",color="gold")
+athlete_df["Age"].plot.kde(xlim=xlims,label="Competitors",color="black")
+plt.legend()
+plt.show()
 
 """Consider age wrt point in olympic cycle (ie mod 4)"""
 athlete_df["Cycle_Age"]=(athlete_df["Age"]%4).astype(int)
@@ -102,12 +102,12 @@ medalist_cycle_ages_counts=athlete_df[athlete_df["Medal"].notnull()]["Cycle_Age"
 # print(medalist_cycle_ages_counts)
 # There is a discrepenacy (is it statistical signifcant)
 
-# y_lims=(0,1.1*max(all_cycle_ages_counts.max(),non_medalist_cycle_ages_counts.max(),medalist_cycle_ages_counts.max()))
-# all_cycle_ages_counts.plot(color="black",label="All",ylim=y_lims)
-# non_medalist_cycle_ages_counts.plot(color="gray",label="Not Winners",ylim=y_lims)
-# medalist_cycle_ages_counts.plot(color="gold",label="Medal Winners",ylim=y_lims)
-# plt.legend()
-# plt.show()
+y_lims=(0,1.1*max(all_cycle_ages_counts.max(),non_medalist_cycle_ages_counts.max(),medalist_cycle_ages_counts.max()))
+all_cycle_ages_counts.plot(color="black",label="All",ylim=y_lims)
+non_medalist_cycle_ages_counts.plot(color="gray",label="Not Winners",ylim=y_lims)
+medalist_cycle_ages_counts.plot(color="gold",label="Medal Winners",ylim=y_lims)
+plt.legend()
+plt.show()
 
 from scipy.stats import binom
 
@@ -167,13 +167,6 @@ plt.legend()
 plt.show()
 # Male distributions are almost identical, the womans' are not. Suggests that older female competitors are more likely to win.
 # This may be due to the sports that women compete in compared to men (female gymansts are notably younger than male)
-
-"""
-SPLIT BY SPORT
-"""
-# cycle age distribution per sport
-sport_groups=athlete_df.groupby(by="Sport")["Age"].mean()
-print(sport_groups)
 
 # TODO
 # consider each sport independetly
