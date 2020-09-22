@@ -2,7 +2,7 @@
 
 | **Column Name** | **Type** | **Description** |
 |------------|----------|-----------------|
-| *ID* | Int |  |
+| *Athlete_ID* | Int | Unique identifier for each athlete |
 | *Name* | Str | Name of athlete |
 | *Sex* | Char | Sex of athlete ('M' or 'F') |
 | *Age* | Int | Age of athlete in years |
