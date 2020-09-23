@@ -74,7 +74,6 @@ def clean_noc_regions(df:pd.DataFrame) -> pd.DataFrame:
 
     return clean_df
 
-
 """HELPERS"""
 
 def clean_event(row:pd.Series) -> str:
@@ -111,3 +110,15 @@ def games_per_sport(df:pd.DataFrame) -> pd.DataFrame:
     sport_years_df.columns=["Num_Years"]
     sport_years_df["Num_Years"]=sport_years_df["Num_Years"].astype(int)
     return sport_years_df
+
+# dataframe with details grouped by athlete_id
+def unique_athlete(athlete_df:pd.DataFrame) -> pd.DataFrame:
+    won_a_medal=athlete_df.groupby(by="Athlete_ID")["Medalist"].sum().astype(int)
+    athlete_details=athlete_df.groupby(by="Athlete_ID")["Name","Sex","NOC","Season","Sport","Birth_Year"].first()
+    unique_details=athlete_df.groupby(by="Athlete_ID")["Event","Year"].agg(['unique'])
+    median_age=athlete_df.groupby(by="Athlete_ID")["Age"].agg(['median']).astype(int)
+    unique_athlete_df=athlete_details.merge(won_a_medal,on="Athlete_ID").merge(unique_details,on="Athlete_ID").merge(median_age,on="Athlete_ID")
+    unique_athlete_df.columns=["Name","Sex","NOC","Season","Sport","Birth_Year","Num_Medals","Events","Years","Median_Age"]
+    unique_athlete_df["Medalist"]=(unique_athlete_df["Num_Medals"]>0)
+
+    return unique_athlete_df
