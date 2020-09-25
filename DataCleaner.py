@@ -11,7 +11,6 @@ def clean_athlete_events(df:pd.DataFrame) -> pd.DataFrame:
         - Removes large team sports, as they can skew the data. (Baseball,Tug-Of-War,Handball,Basketball,Ice Hockey,Hockey,Football & Water Polo)
         - Removes data for results before 1948 (due to disruption to games before hand and relative unprofessionalism)
         - Removes sports which appear in less than 5 games.
-        - Removes duplicate data from `Event` column
         - Makes all strings lowercase
 
     PARAMETERS
@@ -116,9 +115,10 @@ def unique_athlete(athlete_df:pd.DataFrame) -> pd.DataFrame:
     won_a_medal=athlete_df.groupby(by="Athlete_ID")["Medalist"].sum().astype(int)
     athlete_details=athlete_df.groupby(by="Athlete_ID")["Name","Sex","NOC","Season","Sport","Birth_Year"].first()
     unique_details=athlete_df.groupby(by="Athlete_ID")["Event","Year"].agg(['unique'])
+    num_events=athlete_df.groupby(by="Athlete_ID")["Event"].agg(lambda x:len(x.unique()))
     median_age=athlete_df.groupby(by="Athlete_ID")["Age"].agg(['median']).astype(int)
-    unique_athlete_df=athlete_details.merge(won_a_medal,on="Athlete_ID").merge(unique_details,on="Athlete_ID").merge(median_age,on="Athlete_ID")
-    unique_athlete_df.columns=["Name","Sex","NOC","Season","Sport","Birth_Year","Num_Medals","Events","Years","Median_Age"]
+    unique_athlete_df=athlete_details.merge(won_a_medal,on="Athlete_ID").merge(unique_details,on="Athlete_ID").merge(num_events,on="Athlete_ID").merge(median_age,on="Athlete_ID")
+    unique_athlete_df.columns=["Name","Sex","NOC","Season","Sport","Birth_Year","Num_Medals","Events","Years","Num_Events","Median_Age"]
     unique_athlete_df["Medalist"]=(unique_athlete_df["Num_Medals"]>0)
 
     return unique_athlete_df
