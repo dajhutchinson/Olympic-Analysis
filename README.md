@@ -15,7 +15,7 @@
 Does the year you are born in an Olympic cycle affect the likelihood of you becoming an Olympic athlete or medalist?
 
 ## Summary of Findings
-There is very little evidence that when you are born in an Olympic Cycle affects your chance of becoming an Olympic Athlete and almost certainly has no affect on the majority of sports.<br/>
+There is very little evidence that when you are born in an Olympic Cycle affects your chance of becoming an Olympic Athlete and almost certainly has no affect on the majority of sports.
 
 However, I show that female gymnasts are among the youngest athletes, have some of the shortest Olympic careers and that their age distribution is statistically non-uniform. Thus, when you are born in an Olympic cycle has the greatest affect (and likely a tangible one) on becoming a female olympic gymnast.
 
@@ -44,9 +44,9 @@ This leaves 200,969 valid entries.
 I did not utilise the data from `noc_regions.csv`.
 
 ### Notebooks
-1. **[Overview Analysis]("Overview Analysis.ipynb")**. I look at the trends in the population of olympic athletes and medalists as a whole. Although fewer medalists have been born during Olympic years, and the year immediately after, this was not found to be statistically significant. The expected number of olympics attended was consistent across all the normalised ages.
-2. **[Sex Analysis]("Sex Analysis.ipynb")** I consider male and female athletes separately. Female athletes are overall a couple of years younger than male athletes, and for both groups medalists are typically a year older than the average competitor. For both groups fewer medalsits are born in Olympic years, but again this was not found to be statistically significant.
-3. **[Sport Analysis]("Sport Analysis.ipynb")** Finally, I grouped athletes by the sport they competed in. Here statistically significant results were found with gymnasts and cyclists not having uniformly distributed normalised ages.
+1. **[Overview Analysis](Overview%20Analysis.ipynb)**. I look at the trends in the population of olympic athletes and medalists as a whole. Although fewer medalists have been born during Olympic years, and the year immediately after, this was not found to be statistically significant. The expected number of olympics attended was consistent across all the normalised ages.
+2. **[Sex Analysis]("ex%20Analysis.ipynb)** I consider male and female athletes separately. Female athletes are overall a couple of years younger than male athletes, and for both groups medalists are typically a year older than the average competitor. For both groups fewer medalsits are born in Olympic years, but again this was not found to be statistically significant.
+3. **[Sport Analysis](Sport%20Analysis.ipynb)** Finally, I grouped athletes by the sport they competed in. Here statistically significant results were found with gymnasts and cyclists not having uniformly distributed normalised ages.
 
 ### Techniques Used
 The bulk of the work in this project is done preparing and manipulating the data for meaningful visualisation. I used *Pearson's Chi-Squared Test* to evaluate the likelihood of the normalised age distributions being uniform.
