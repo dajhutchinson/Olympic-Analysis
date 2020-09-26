@@ -26,7 +26,7 @@ Rowing has a surprisingly high number of pre-teen athletes. This is due to the c
 
 ### The Data
 Data is taken from [Kaggle](https://www.kaggle.com/heesoo37/120-years-of-olympic-history-athletes-and-results).
-The data files are not included due to their size. My code uses the same filenames as Kaggle (`athlete_events.csv` and `noc_regions.csv`) and expects them to be stored in the `data/` directory. I changed the `ID` column in `athlete_events.csv` to `Athlete_ID` for readability. I have provided the file `data/explanation.md` to provide a summary of the fields contained in each file.
+The data files are not included due to their size. My code uses the same filenames as Kaggle (`athlete_events.csv` and `noc_regions.csv`) and expects them to be stored in the `data/` directory. I changed the `ID` column in `athlete_events.csv` to `Athlete_ID` for readability. I have provided the file [data/explanation.md](data/explanation.md) to provide a summary of the fields contained in each file.
 
 #### Limitations
 The data provided only gives the athletes age in years at the time of their olympic event, it does not include their date of birth. This lack of detail means I cannot accurately determine how exactly long after an Olympics someone was born and cannot distinguish between two athletes born 1 month apart rather than 23.
